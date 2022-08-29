@@ -2,6 +2,7 @@ package lawhon.brian;
 
 public class PeopleRepository {
 
-    public void save(Person person) {
+    public Person save(Person person) {
+        return person;
     }
 }
