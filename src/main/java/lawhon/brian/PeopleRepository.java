@@ -3,17 +3,19 @@ package lawhon.brian;
 import java.sql.*;
 import java.time.ZoneId;
 import java.time.*;
+import java.util.Optional;
 
 public class PeopleRepository {
+    public static final String SAVE_PERSON_SQL = "INSERT INTO PEOPLE (FIRST_NAME, LAST_NAME, DOB) VALUES(?, ?, ?)";
+    public static final String FIND_BY_ID_SQL = "SELECT ID, FIRST_NAME, LAST_NAME, DOB FROM PEOPLE WHERE ID=?";
     private Connection connection;
     public PeopleRepository(Connection connection) {
         this.connection = connection;
     }
 
     public Person save(Person person) {
-        String sql = "INSERT INTO PEOPLE (FIRST_NAME, LAST_NAME, DOB) VALUES(?, ?, ?)";
         try {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(SAVE_PERSON_SQL, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, person.getFirstName());
             ps.setString(2,person.getLastName());
             ps.setTimestamp(3, Timestamp.valueOf(person.getDob().withZoneSameInstant(ZoneId.of("+0")).toLocalDateTime()));
@@ -22,11 +24,33 @@ public class PeopleRepository {
             while(rs.next()){
                 long id = rs.getLong(1);
                 person.setId(id);
+                System.out.println(person);
             }
             System.out.printf("Records affected: %d%n", recordsAffected);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         return person;
+    }
+
+    public Optional<Person> findById(Long id) {
+        Person person = null;
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(FIND_BY_ID_SQL);
+            ps.setLong(1, id);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                long personID = rs.getLong("ID");
+                String firstName = rs.getString("FIRST_NAME");
+                String lastName = rs.getString("LAST_NAME");
+                ZonedDateTime dob = ZonedDateTime.of(rs.getTimestamp("DOB").toLocalDateTime(), ZoneId.of("+0"));
+                person = new Person(firstName, lastName, dob);
+                person.setId(personID);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.ofNullable(person);
     }
 }
