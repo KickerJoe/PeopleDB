@@ -1,6 +1,7 @@
 package lawhon.brian;
 
 import java.sql.*;
+import java.util.Optional;
 
 abstract class CRUDRepository<T extends Entity> {
 
@@ -27,6 +28,32 @@ abstract class CRUDRepository<T extends Entity> {
         }
         return entity;
     }
+
+    public Optional<T> findById(Long id) {
+        T entity = null;
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(getFindByIdSql());
+            ps.setLong(1, id);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                entity = extractEntityFromResultSet(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.ofNullable(entity);
+    }
+
+    abstract T extractEntityFromResultSet(ResultSet rs) throws SQLException;
+
+    /**
+     *
+     * @return Returns a String that represents the SQL needed to retrieve one entity.
+     * The SQL must contain one SQL parameter, i.e. "?", that will bind to the
+     * entity's ID.
+     */
+    abstract String getFindByIdSql();
 
     abstract void mapForSave(T entity, PreparedStatement ps) throws SQLException;
 
